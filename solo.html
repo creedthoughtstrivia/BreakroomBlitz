@@ -30,6 +30,7 @@
       <p>Enter a name and press Start. Solo ignores categories and pulls random questions across all packs.</p>
 
       <label>Display Name <input id="nameSolo" maxlength="20" placeholder="e.g., Bruce" /></label>
+      <!-- kept for compatibility but hidden -->
       <label style="display:none;">Question Set <select id="setSolo"></select></label>
       <label>Number of Questions <input id="countSolo" type="number" min="5" max="50" value="12" /></label>
       <button id="btnStartSolo" disabled>Start Quiz</button>
@@ -54,26 +55,21 @@
   </main>
 </div>
 
-<!-- Load order MATTERS: packs → config → rt → sound → app -->
+<!-- ORDER MATTERS: packs → config → rt → sound → app -->
 <script src="packs/index.js"></script>
 <script src="js/config.js"></script>
 <script src="js/rt.js"></script>
 <script src="js/sound.js"></script>
 <script src="js/app.js"></script>
-<script src="js/footer.js"></script>
 <script src="js/admin-gate.js"></script>
+<script src="js/footer.js"></script>
 <script src="js/easter-egg.js"></script>
 
 <script>
+  // Enable Start on DOM ready (Solo never requires Firebase)
   document.addEventListener('DOMContentLoaded', () => {
-    // Enable Start once DOM is ready (Solo does not require Firebase)
     const btn = document.getElementById('btnStartSolo');
     if (btn) btn.disabled = false;
-
-    // click sound
-    document.querySelectorAll('button, a').forEach(el => {
-      el.addEventListener('click', () => window.playSound && window.playSound('click'));
-    });
   });
 </script>
 </body>
