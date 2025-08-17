@@ -1,4 +1,4 @@
-// js/easter-egg.js — stub to avoid 404
-(function () {
-  // no-op: this file intentionally does nothing
-})();
+// js/easter-egg.js — stub file to avoid 404 errors when referenced in HTML
+// In the full game, this file implements opt-in Easter egg logic. For
+// minimal operation, this stub intentionally does nothing.
+(function(){ /* no-op placeholder */ })();
