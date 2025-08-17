@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Break Room Blitz</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="overlay">
+  <!-- Main navigation -->
+  <nav class="navbar">
+    <h1>Break Room Blitz</h1>
+    <ul>
+      <li><a href="solo.html">Solo Play</a></li>
+      <li><a href="live.html">Live Match</a></li>
+      <li><a href="leaderboard.html">Leaderboard</a></li>
+      <li><a href="explore.html">Explore</a></li>
+      <!-- Additional informational pages -->
+      <li><a href="about-creed.html">About Creed Thoughts</a></li>
+      <li><a href="about-addicts.html">About Office Addicts</a></li>
+      <li><a href="about-show.html">About The Show</a></li>
+      <li><a href="contact.html">Contact Us</a></li>
+      <li><a href="store.html">Store</a></li>
+      <!-- Admin link is still provided at the end -->
+      <li><a href="admin.html">Admin</a></li>
+    </ul>
+  </nav>
+  <!-- Welcome card -->
+  <section class="card">
+    <h2>Welcome to Break Room Blitz!</h2>
+    <p>Quick‑fire fun for fans of <em>The Office</em>. Grab your coffee, gather your colleagues and see who reigns supreme in the break room.</p>
+  </section>
+</div>
+<!-- Scripts for interactive features -->
+<script src="js/sound.js"></script>
+<!-- Hide/show Admin nav and provide logout based on session flag -->
+<script src="js/admin-gate.js"></script>
+<script>
+  // Secret phrase detection to toggle an alternate theme.  When the user
+  // types the phrase "BEARS.BEETS.BATTLESTAR." anywhere on this page, the
+  // body will toggle a dark‑mode inversion effect.  The preference is
+  // persisted in localStorage.
+  (function() {
+    const SECRET = 'BEARS.BEETS.BATTLESTAR.';
+    let buffer = '';
+    function applyTheme() {
+      const enabled = localStorage.getItem('ct_dark_mode') === 'true';
+      document.body.classList.toggle('dark-mode', enabled);
+    }
+    document.addEventListener('keydown', (e) => {
+      buffer += e.key.toUpperCase();
+      if (buffer.length > SECRET.length) buffer = buffer.slice(-SECRET.length);
+      if (buffer === SECRET) {
+        const current = localStorage.getItem('ct_dark_mode') === 'true';
+        localStorage.setItem('ct_dark_mode', (!current).toString());
+        applyTheme();
+        buffer = '';
+        alert('Theme toggled!');
+      }
+    });
+    // Apply stored theme on load
+    document.addEventListener('DOMContentLoaded', applyTheme);
+  })();
+  // Display Explore link if the bonus has been unlocked via gameplay
+  document.addEventListener('DOMContentLoaded', () => {
+    const navList = document.querySelector('.navbar ul');
+    if (navList && localStorage.getItem('ct_unlocked_explore') === 'true') {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = 'explore.html';
+      a.textContent = 'Explore';
+      li.appendChild(a);
+      navList.appendChild(li);
+    }
+  });
+  // Add click sound to nav links
+  document.querySelectorAll('button, a').forEach(el => {
+    el.addEventListener('click', () => window.playSound && window.playSound('click'));
+  });
+</script>
+<!-- Footer and Easter egg scripts -->
+<script src="js/footer.js"></script>
+<script src="js/easter-egg.js"></script>
+</body>
+</html>

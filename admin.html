@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin - Break Room Blitz</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="overlay">
+  <nav class="navbar">
+    <h1><a href="index.html" style="color: inherit; text-decoration: none;">Break Room Blitz</a></h1>
+    <ul>
+      <li><a href="solo.html">Solo Play</a></li>
+      <li><a href="live.html">Live Match</a></li>
+      <li><a href="leaderboard.html">Leaderboard</a></li>
+      <li><a href="explore.html">Explore</a></li>
+      <!-- Additional informational pages for both communities and the show -->
+      <li><a href="about-creed.html">About Creed Thoughts</a></li>
+      <li><a href="about-addicts.html">About Office Addicts</a></li>
+      <li><a href="about-show.html">About The Show</a></li>
+      <li><a href="contact.html">Contact Us</a></li>
+      <li><a href="store.html">Store</a></li>
+      <!-- Admin link should remain at the end to highlight current page -->
+      <li><a href="admin.html">Admin</a></li>
+    </ul>
+  </nav>
+  <main>
+    <!-- Settings management -->
+    <section class="card">
+      <h2>Settings</h2>
+      <label>Base Correct <input id="sBase" type="number" /></label>
+      <label>Speed Bonus Max <input id="sSpeedMax" type="number" /></label>
+      <label>First Correct Bonus <input id="sFirst" type="number" /></label>
+      <label>Per‑Q Time Default <input id="sTime" type="number" /></label>
+      <label><input id="sShuffleQ" type="checkbox" /> Shuffle Questions</label>
+      <label><input id="sShuffleA" type="checkbox" /> Shuffle Answers</label>
+      <label><input id="sDailySeed" type="checkbox" /> Daily Seed</label>
+      <button id="btnSaveSettings">Save Settings</button>
+    </section>
+    <!-- Maintenance tools -->
+    <section class="card">
+      <h2>Maintenance</h2>
+      <button id="btnClearSolo">Clear Solo Leaderboard</button>
+      <button id="btnClearLocal" style="margin-left:8px;">Clear Local Leaderboard</button>
+      <label style="display:block;margin-top:12px;"><input id="toggleEggs" type="checkbox" /> Enable Easter Eggs</label>
+    </section>
+
+    <!-- Pack management; hidden until correct passcode is entered -->
+    <section class="card hidden" id="packsCard">
+      <h2>Question Packs</h2>
+      <div id="packsList">Loading packs…</div>
+    </section>
+
+    <!-- Analytics section; hidden until admin authentication -->
+    <section class="card hidden" id="analyticsCard">
+      <h2>Analytics</h2>
+      <div id="analytics"></div>
+    </section>
+    <!-- Diagnostics section; hidden until admin authentication.  Displays build
+         information, Firebase status and feature flags. -->
+    <section class="card hidden" id="diagnosticsCard">
+      <h2>Diagnostics</h2>
+      <div id="diagnostics"></div>
+    </section>
+  </main>
+</div>
+<!-- Load global scripts -->
+    <!-- Load question packs before config so PACKS and QUESTION_SETS are populated -->
+    <script src="packs/index.js"></script>
+<script src="js/config.js"></script>
+<script src="js/rt.js"></script>
+<script src="js/sound.js"></script>
+<!-- Admin gate script to hide admin nav and add logout link on other pages -->
+<script src="js/admin-gate.js"></script>
+<script>
+  const APP = window.APP;
+  const clearSoloScores = window.clearSoloScores;
+  const playSound = window.playSound;
+  const packs = window.PACKS || [];
+  // Settings form elements
+  const sBase = document.getElementById('sBase');
+  const sSpeedMax = document.getElementById('sSpeedMax');
+  const sFirst = document.getElementById('sFirst');
+  const sTime = document.getElementById('sTime');
+  const sShuffleQ = document.getElementById('sShuffleQ');
+  const sShuffleA = document.getElementById('sShuffleA');
+  const sDailySeed = document.getElementById('sDailySeed');
+  const btnSave = document.getElementById('btnSaveSettings');
+  const btnClearSolo = document.getElementById('btnClearSolo');
+  const btnClearLocal = document.getElementById('btnClearLocal');
+  const toggleEggs = document.getElementById('toggleEggs');
+  const packsCard = document.getElementById('packsCard');
+  const packsList = document.getElementById('packsList');
+  const analyticsCard = document.getElementById('analyticsCard');
+  const analyticsDiv = document.getElementById('analytics');
+  const diagnosticsCard = document.getElementById('diagnosticsCard');
+  const diagnosticsDiv = document.getElementById('diagnostics');
+  // Load and populate settings
+  function loadSettings(){
+    const override = JSON.parse(localStorage.getItem('ct_settings')||'{}');
+    const settings = { ...APP.DEFAULTS, ...override };
+    sBase.value = settings.BASE_CORRECT;
+    sSpeedMax.value = settings.SPEED_MAX;
+    sFirst.value = settings.FIRST_CORRECT;
+    sTime.value = settings.TIME_PER_Q;
+    sShuffleQ.checked = settings.SHUFFLE_Q;
+    sShuffleA.checked = settings.SHUFFLE_A;
+    sDailySeed.checked = settings.DAILY_SEED;
+  }
+  // Save new settings to localStorage
+  btnSave.addEventListener('click', () => {
+    if (playSound) playSound('click');
+    const newSettings = {
+      BASE_CORRECT: parseInt(sBase.value||'100',10),
+      SPEED_MAX: parseInt(sSpeedMax.value||'50',10),
+      FIRST_CORRECT: parseInt(sFirst.value||'100',10),
+      TIME_PER_Q: parseInt(sTime.value||'25',10),
+      SHUFFLE_Q: sShuffleQ.checked,
+      SHUFFLE_A: sShuffleA.checked,
+      DAILY_SEED: sDailySeed.checked
+    };
+    localStorage.setItem('ct_settings', JSON.stringify(newSettings));
+    alert('Settings saved!');
+  });
+  // Clear solo leaderboard
+  btnClearSolo.addEventListener('click', async () => {
+    if (playSound) playSound('click');
+    if (confirm('Clear solo leaderboard?')) {
+      if (clearSoloScores) await clearSoloScores();
+      alert('Solo leaderboard cleared.');
+    }
+  });
+  // Clear local leaderboard
+  btnClearLocal.addEventListener('click', () => {
+    if (playSound) playSound('click');
+    if (confirm('Clear local leaderboard?')) {
+      localStorage.removeItem('ct_solo_scores');
+      alert('Local leaderboard cleared.');
+    }
+  });
+  // Easter eggs toggle
+  function loadEggToggle() {
+    const val = localStorage.getItem('ct_eggs_enabled');
+    toggleEggs.checked = (val === null || val === 'true');
+  }
+  toggleEggs.addEventListener('change', () => {
+    if (playSound) playSound('click');
+    localStorage.setItem('ct_eggs_enabled', toggleEggs.checked.toString());
+    alert('Easter eggs ' + (toggleEggs.checked ? 'enabled' : 'disabled') + '.');
+  });
+  // Render pack management controls
+  function renderPacks() {
+    packsList.innerHTML = '';
+    // Get disabled list from localStorage
+    let disabled = [];
+    try { disabled = JSON.parse(localStorage.getItem('ct_disabled_packs') || '[]'); } catch { disabled = []; }
+    packs.forEach(p => {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.alignItems = 'center';
+      row.style.justifyContent = 'space-between';
+      row.style.marginBottom = '8px';
+      const info = document.createElement('span');
+      info.textContent = `${p.title} (${p.packId})`;
+      const toggle = document.createElement('input');
+      toggle.type = 'checkbox';
+      toggle.checked = !disabled.includes(p.packId);
+      toggle.addEventListener('change', () => {
+        if (!toggle.checked) {
+          disabled.push(p.packId);
+        } else {
+          disabled = disabled.filter(x => x !== p.packId);
+        }
+        localStorage.setItem('ct_disabled_packs', JSON.stringify(disabled));
+        alert('Pack preferences updated. Reload pages to take effect.');
+      });
+      row.appendChild(info);
+      row.appendChild(toggle);
+      packsList.appendChild(row);
+    });
+    // Add export button
+    const exportBtn = document.createElement('button');
+    exportBtn.textContent = 'Export Enabled Questions';
+    exportBtn.addEventListener('click', async () => {
+      const enabledPacks = packs.filter(p => !disabled.includes(p.packId));
+      let merged = [];
+      for (const p of enabledPacks) {
+        try {
+          const data = await (await fetch(p.path)).json();
+          merged = merged.concat(data.questions || []);
+        } catch (e) {
+          console.error('Failed to load', p.path, e);
+        }
+      }
+      const blob = new Blob([JSON.stringify(merged, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'enabled_questions.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    packsList.appendChild(exportBtn);
+  }
+  // Simple analytics: compute number of plays and average score from localStorage
+  function renderAnalytics() {
+    const scores = JSON.parse(localStorage.getItem('ct_solo_scores') || '[]');
+    if (!scores.length) {
+      analyticsDiv.textContent = 'No data yet.';
+      return;
+    }
+    const totalPlays = scores.length;
+    const avgScore = Math.round(scores.reduce((acc, s) => acc + s.score, 0) / totalPlays);
+    const maxScore = Math.max(...scores.map(s => s.score));
+    analyticsDiv.innerHTML = '';
+    const p1 = document.createElement('p');
+    p1.textContent = `Total plays (local): ${totalPlays}`;
+    const p2 = document.createElement('p');
+    p2.textContent = `Average score: ${avgScore}`;
+    const p3 = document.createElement('p');
+    p3.textContent = `Highest score: ${maxScore}`;
+    analyticsDiv.appendChild(p1);
+    analyticsDiv.appendChild(p2);
+    analyticsDiv.appendChild(p3);
+  }
+
+  // Diagnostics renderer.  Displays simple build and configuration information.
+  function renderDiagnostics() {
+    const lines = [];
+    try {
+      const build = '20250817';
+      lines.push(`Build: ${build}`);
+      const fbEnabled = window.FB && window.FB.enabled;
+      lines.push(`Firebase enabled: ${fbEnabled}`);
+      const eggs = localStorage.getItem('ct_eggs_enabled');
+      lines.push(`Easter eggs enabled: ${eggs === null || eggs === 'true'}`);
+      const packsDisabled = JSON.parse(localStorage.getItem('ct_disabled_packs') || '[]');
+      lines.push(`Enabled packs: ${packs.filter(p => !packsDisabled.includes(p.packId)).length}`);
+      lines.push(`Secret phrase: Wonder Woman’s favorite winter salad recipes`);
+    } catch (e) {
+      lines.push('Could not compute diagnostics.');
+    }
+    diagnosticsDiv.innerHTML = '';
+    lines.forEach(l => {
+      const p = document.createElement('p');
+      p.textContent = l;
+      diagnosticsDiv.appendChild(p);
+    });
+  }
+  // Passcode gate on load.  Uses sessionStorage to persist admin auth across pages.
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+    loadEggToggle();
+    let authed = sessionStorage.getItem('ct_admin_authed') === 'true';
+    if (!authed) {
+      const pass = prompt('Enter admin passcode:');
+      authed = pass === APP.OWNER_PASSCODE;
+      if (authed) {
+        sessionStorage.setItem('ct_admin_authed', 'true');
+      }
+    }
+    if (authed) {
+      // Show pack and analytics sections
+      packsCard.classList.remove('hidden');
+      analyticsCard.classList.remove('hidden');
+      diagnosticsCard.classList.remove('hidden');
+      renderPacks();
+      renderAnalytics();
+      renderDiagnostics();
+    } else {
+      // Hide sensitive sections and inform the user
+      packsCard.classList.add('hidden');
+      analyticsCard.classList.add('hidden');
+      diagnosticsCard.classList.add('hidden');
+      alert('Incorrect passcode. You can still adjust settings.');
+    }
+  });
+</script>
+<!-- Footer and Easter egg scripts -->
+<script src="js/footer.js"></script>
+<script src="js/easter-egg.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+// Sample Firestore security rules for Break Room Blitz.
+// These rules allow anyone to read the leaderboards and matches while
+// restricting writes to authenticated users. Adjust according to your
+// application’s security requirements.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Solo leaderboard scores
+    match /soloScores/{scoreId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    // Live matches and tournaments
+    match /matches/{matchId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
